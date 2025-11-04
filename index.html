@@ -310,7 +310,8 @@
         let correct = 0;
         let wrong = 0;
         let selectedItem = null;
-        let items = [];
+        let leftItems = [];
+        let rightItems = [];
 
         const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#feca57', '#ff9ff3', '#48dbfb'];
         const shapes = ['circle', 'square', 'triangle', 'star'];
@@ -327,6 +328,8 @@
             correct = 0;
             wrong = 0;
             selectedItem = null;
+            leftItems = [];
+            rightItems = [];
             updateScore();
             
             if (gameMode === 'color') {
@@ -337,36 +340,60 @@
         }
 
         function initColorGame() {
-            items = [];
             const selectedColors = colors.slice(0, 5);
             
-            selectedColors.forEach(color => {
-                items.push({ type: 'color', value: color, matched: false });
-                items.push({ type: 'color', value: color, matched: false });
+            // Buat pasangan dengan ID unik
+            selectedColors.forEach((color, index) => {
+                const pairId = `pair-${index}`;
+                leftItems.push({ 
+                    type: 'color', 
+                    value: color, 
+                    pairId: pairId,
+                    matched: false 
+                });
+                rightItems.push({ 
+                    type: 'color', 
+                    value: color, 
+                    pairId: pairId,
+                    matched: false 
+                });
             });
 
-            const leftItems = items.slice(0, 5);
-            const rightItems = shuffle(items.slice(5));
+            // Acak item di kolom kanan
+            rightItems = shuffle(rightItems);
 
-            renderGame(leftItems, rightItems);
+            renderGame();
         }
 
         function initShapeGame() {
-            items = [];
-            
-            shapes.forEach(shape => {
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                items.push({ type: 'shape', value: shape, color: color, matched: false });
-                items.push({ type: 'shape', value: shape, color: color, matched: false });
+            // Buat pasangan dengan ID unik
+            shapes.forEach((shape, index) => {
+                const color = colors[index % colors.length];
+                const pairId = `pair-${index}`;
+                
+                leftItems.push({ 
+                    type: 'shape', 
+                    value: shape, 
+                    color: color, 
+                    pairId: pairId,
+                    matched: false 
+                });
+                rightItems.push({ 
+                    type: 'shape', 
+                    value: shape, 
+                    color: color, 
+                    pairId: pairId,
+                    matched: false 
+                });
             });
 
-            const leftItems = items.slice(0, 4);
-            const rightItems = shuffle(items.slice(4));
+            // Acak item di kolom kanan
+            rightItems = shuffle(rightItems);
 
-            renderGame(leftItems, rightItems);
+            renderGame();
         }
 
-        function renderGame(leftItems, rightItems) {
+        function renderGame() {
             const gameArea = document.getElementById('gameArea');
             gameArea.innerHTML = `
                 <div class="column" id="leftColumn"></div>
@@ -390,7 +417,7 @@
             div.className = 'shape-item';
             div.dataset.side = side;
             div.dataset.index = index;
-            div.dataset.value = item.value;
+            div.dataset.pairId = item.pairId;
             
             if (gameMode === 'color') {
                 const shape = document.createElement('div');
@@ -402,7 +429,7 @@
                 div.appendChild(shape);
             }
 
-            div.onclick = () => selectItem(div, item);
+            div.onclick = () => selectItem(div, item, side, index);
             return div;
         }
 
@@ -423,31 +450,41 @@
             return shape;
         }
 
-        function selectItem(element, item) {
+        function selectItem(element, item, side, index) {
             if (item.matched) return;
 
             if (!selectedItem) {
-                selectedItem = { element, item, side: element.dataset.side };
+                selectedItem = { element, item, side, index };
                 element.classList.add('selected');
             } else {
-                if (selectedItem.side === element.dataset.side) {
+                if (selectedItem.side === side) {
+                    // Pilih item baru di kolom yang sama
                     selectedItem.element.classList.remove('selected');
-                    selectedItem = { element, item, side: element.dataset.side };
+                    selectedItem = { element, item, side, index };
                     element.classList.add('selected');
                 } else {
-                    checkMatch(element, item);
+                    // Cek kecocokan
+                    checkMatch(element, item, side, index);
                 }
             }
         }
 
-        function checkMatch(element, item) {
-            if (selectedItem.item.value === item.value) {
+        function checkMatch(element, item, side, index) {
+            // Cek apakah pairId cocok
+            if (selectedItem.item.pairId === item.pairId) {
+                // Cocok!
                 selectedItem.element.classList.remove('selected');
                 selectedItem.element.classList.add('matched');
                 element.classList.add('matched');
                 
-                selectedItem.item.matched = true;
-                item.matched = true;
+                // Update status matched
+                if (selectedItem.side === 'left') {
+                    leftItems[selectedItem.index].matched = true;
+                    rightItems[index].matched = true;
+                } else {
+                    rightItems[selectedItem.index].matched = true;
+                    leftItems[index].matched = true;
+                }
                 
                 score += 10;
                 correct++;
@@ -459,6 +496,7 @@
                     setTimeout(showCelebration, 500);
                 }
             } else {
+                // Tidak cocok
                 element.classList.add('wrong');
                 selectedItem.element.classList.add('wrong');
                 
@@ -475,7 +513,7 @@
         }
 
         function checkWin() {
-            return items.every(item => item.matched);
+            return leftItems.every(item => item.matched) && rightItems.every(item => item.matched);
         }
 
         function showCelebration() {
