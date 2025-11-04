@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Memasangkan Warna dan Bentuk</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 30px;
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            border-radius: 15px;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .score-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+
+        .game-mode {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            padding: 12px 24px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            font-family: 'Comic Sans MS', cursive;
+        }
+
+        .mode-btn.active {
+            background: #667eea;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .mode-btn:not(.active) {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .mode-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .shape-item {
+            width: 100%;
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 4px solid transparent;
+            background: #f8f9fa;
+        }
+
+        .shape-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .shape-item.selected {
+            border: 4px solid #ffd700;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .shape-item.matched {
+            opacity: 0.5;
+            pointer-events: none;
+            border: 4px solid #4caf50;
+        }
+
+        .shape-item.wrong {
+            animation: shake 0.5s;
+            border: 4px solid #f44336;
+        }
+
+        .shape {
+            transition: all 0.3s;
+        }
+
+        .circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+        }
+
+        .square {
+            width: 80px;
+            height: 80px;
+        }
+
+        .triangle {
+            width: 0;
+            height: 0;
+            border-left: 40px solid transparent;
+            border-right: 40px solid transparent;
+            border-bottom: 80px solid;
+        }
+
+        .star {
+            width: 80px;
+            height: 80px;
+            position: relative;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            font-family: 'Comic Sans MS', cursive;
+        }
+
+        .btn-reset {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background: #ff5252;
+            transform: scale(1.05);
+        }
+
+        .celebration {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+
+        .celebration.show {
+            display: block;
+            animation: bounce 0.5s;
+        }
+
+        .celebration h2 {
+            color: #4caf50;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+
+        .celebration p {
+            font-size: 1.3em;
+            color: #666;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Game Memasangkan</h1>
+        <p class="subtitle">Cocokkan warna atau bentuk yang sama!</p>
+        
+        <div class="score-board">
+            <div class="score-item">
+                <div class="score-label">Skor</div>
+                <div class="score-value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">Benar</div>
+                <div class="score-value" id="correct">0</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">Salah</div>
+                <div class="score-value" id="wrong">0</div>
+            </div>
+        </div>
+
+        <div class="game-mode">
+            <button class="mode-btn active" onclick="setMode('color')" id="colorBtn">🎨 Warna</button>
+            <button class="mode-btn" onclick="setMode('shape')" id="shapeBtn">⭐ Bentuk</button>
+        </div>
+
+        <div class="game-area" id="gameArea"></div>
+
+        <div class="controls">
+            <button class="btn btn-reset" onclick="resetGame()">🔄 Main Lagi</button>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="celebration" id="celebration">
+        <h2>🎉 Hebat Sekali! 🎉</h2>
+        <p>Kamu berhasil mencocokkan semuanya!</p>
+        <p style="margin-top: 20px;">Skor: <span id="finalScore">0</span></p>
+        <button class="btn btn-reset" onclick="resetGame()" style="margin-top: 20px;">Main Lagi</button>
+    </div>
+
+    <script>
+        let gameMode = 'color';
+        let score = 0;
+        let correct = 0;
+        let wrong = 0;
+        let selectedItem = null;
+        let items = [];
+
+        const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#feca57', '#ff9ff3', '#48dbfb'];
+        const shapes = ['circle', 'square', 'triangle', 'star'];
+
+        function setMode(mode) {
+            gameMode = mode;
+            document.getElementById('colorBtn').classList.toggle('active', mode === 'color');
+            document.getElementById('shapeBtn').classList.toggle('active', mode === 'shape');
+            initGame();
+        }
+
+        function initGame() {
+            score = 0;
+            correct = 0;
+            wrong = 0;
+            selectedItem = null;
+            updateScore();
+            
+            if (gameMode === 'color') {
+                initColorGame();
+            } else {
+                initShapeGame();
+            }
+        }
+
+        function initColorGame() {
+            items = [];
+            const selectedColors = colors.slice(0, 5);
+            
+            selectedColors.forEach(color => {
+                items.push({ type: 'color', value: color, matched: false });
+                items.push({ type: 'color', value: color, matched: false });
+            });
+
+            const leftItems = items.slice(0, 5);
+            const rightItems = shuffle(items.slice(5));
+
+            renderGame(leftItems, rightItems);
+        }
+
+        function initShapeGame() {
+            items = [];
+            
+            shapes.forEach(shape => {
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                items.push({ type: 'shape', value: shape, color: color, matched: false });
+                items.push({ type: 'shape', value: shape, color: color, matched: false });
+            });
+
+            const leftItems = items.slice(0, 4);
+            const rightItems = shuffle(items.slice(4));
+
+            renderGame(leftItems, rightItems);
+        }
+
+        function renderGame(leftItems, rightItems) {
+            const gameArea = document.getElementById('gameArea');
+            gameArea.innerHTML = `
+                <div class="column" id="leftColumn"></div>
+                <div class="column" id="rightColumn"></div>
+            `;
+
+            const leftColumn = document.getElementById('leftColumn');
+            const rightColumn = document.getElementById('rightColumn');
+
+            leftItems.forEach((item, index) => {
+                leftColumn.appendChild(createShapeElement(item, 'left', index));
+            });
+
+            rightItems.forEach((item, index) => {
+                rightColumn.appendChild(createShapeElement(item, 'right', index));
+            });
+        }
+
+        function createShapeElement(item, side, index) {
+            const div = document.createElement('div');
+            div.className = 'shape-item';
+            div.dataset.side = side;
+            div.dataset.index = index;
+            div.dataset.value = item.value;
+            
+            if (gameMode === 'color') {
+                const shape = document.createElement('div');
+                shape.className = 'shape circle';
+                shape.style.backgroundColor = item.value;
+                div.appendChild(shape);
+            } else {
+                const shape = createShape(item.value, item.color);
+                div.appendChild(shape);
+            }
+
+            div.onclick = () => selectItem(div, item);
+            return div;
+        }
+
+        function createShape(shapeType, color) {
+            const shape = document.createElement('div');
+            shape.className = `shape ${shapeType}`;
+            
+            if (shapeType === 'star') {
+                shape.innerHTML = '⭐';
+                shape.style.fontSize = '80px';
+                shape.style.filter = `hue-rotate(${Math.random() * 360}deg)`;
+            } else if (shapeType === 'triangle') {
+                shape.style.borderBottomColor = color;
+            } else {
+                shape.style.backgroundColor = color;
+            }
+            
+            return shape;
+        }
+
+        function selectItem(element, item) {
+            if (item.matched) return;
+
+            if (!selectedItem) {
+                selectedItem = { element, item, side: element.dataset.side };
+                element.classList.add('selected');
+            } else {
+                if (selectedItem.side === element.dataset.side) {
+                    selectedItem.element.classList.remove('selected');
+                    selectedItem = { element, item, side: element.dataset.side };
+                    element.classList.add('selected');
+                } else {
+                    checkMatch(element, item);
+                }
+            }
+        }
+
+        function checkMatch(element, item) {
+            if (selectedItem.item.value === item.value) {
+                selectedItem.element.classList.remove('selected');
+                selectedItem.element.classList.add('matched');
+                element.classList.add('matched');
+                
+                selectedItem.item.matched = true;
+                item.matched = true;
+                
+                score += 10;
+                correct++;
+                updateScore();
+                
+                selectedItem = null;
+
+                if (checkWin()) {
+                    setTimeout(showCelebration, 500);
+                }
+            } else {
+                element.classList.add('wrong');
+                selectedItem.element.classList.add('wrong');
+                
+                wrong++;
+                score = Math.max(0, score - 2);
+                updateScore();
+                
+                setTimeout(() => {
+                    element.classList.remove('wrong');
+                    selectedItem.element.classList.remove('wrong', 'selected');
+                    selectedItem = null;
+                }, 500);
+            }
+        }
+
+        function checkWin() {
+            return items.every(item => item.matched);
+        }
+
+        function showCelebration() {
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('celebration').classList.add('show');
+            document.getElementById('overlay').classList.add('show');
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correct;
+            document.getElementById('wrong').textContent = wrong;
+        }
+
+        function resetGame() {
+            document.getElementById('celebration').classList.remove('show');
+            document.getElementById('overlay').classList.remove('show');
+            initGame();
+        }
+
+        function shuffle(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
